@@ -2117,7 +2117,7 @@ string S3fsCurl::CalcSignatureV2(const string& method, const string& strMD5, con
   StringToSign += content_type + "\n";
   StringToSign += date + "\n";
   StringToSign += get_canonical_headers(requestHeaders, true);
-  StringToSign += resource;
+  StringToSign += trim_tail_slash(resource);
 
   const void* key            = S3fsCurl::AWSSecretAccessKey.data();
   int key_len                = S3fsCurl::AWSSecretAccessKey.size();
@@ -2154,7 +2154,7 @@ string S3fsCurl::CalcSignature(const string& method, const string& canonical_uri
     requestHeaders = curl_slist_sort_insert(requestHeaders, "x-amz-security-token", S3fsCurl::AWSAccessToken.c_str());
   }
 
-  uriencode = urlEncode(canonical_uri);
+  uriencode = urlEncode(trim_tail_slash(canonical_uri));
   StringCQ  = method + "\n";
   if(0 == strcmp(method.c_str(),"HEAD") || 0 == strcmp(method.c_str(),"PUT") || 0 == strcmp(method.c_str(),"DELETE")){
     StringCQ += uriencode + "\n";
@@ -2163,7 +2163,7 @@ string S3fsCurl::CalcSignature(const string& method, const string& canonical_uri
   }else if (0 == strcmp(method.c_str(), "GET") && 0 == strncmp(uriencode.c_str(), "/", 1)) {
     StringCQ += uriencode +"\n";
   }else if (0 == strcmp(method.c_str(), "GET") && 0 != strncmp(uriencode.c_str(), "/", 1)) {
-    StringCQ += "/\n" + urlEncode2(canonical_uri) +"\n";
+    StringCQ += "/\n" + urlEncode2(trim_tail_slash(canonical_uri)) +"\n";
   }else if (0 == strcmp(method.c_str(), "POST")) {
     StringCQ += uriencode + "\n";
   }
