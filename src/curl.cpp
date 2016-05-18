@@ -1137,11 +1137,34 @@ bool S3fsCurl::UploadMultipartPostCallback(S3fsCurl* s3fscurl)
   if(!s3fscurl){
     return false;
   }
+
   // check etag(md5);
-  if(NULL == strstr(s3fscurl->headdata->str(), s3fscurl->partdata.etag.c_str())){
+  string etag = "";
+  stringstream ss(s3fscurl->headdata->str());
+  while(getline(ss, etag, '\n'))
+  {
+    if(0 != strstr(etag.c_str(), "Etag: ") || 0 != strstr(etag.c_str(), "etag: ") || 0 != strstr(etag.c_str(), "ETag: "))
+    {
+      etag = etag.substr(etag.find_first_of(": ")+2);
+      break;
+    }
+  }
+
+  size_t pos;
+  if(string::npos != (pos = etag.find_first_of('"')))
+  {
+    etag = etag.substr(pos+1);
+  }
+  if(string::npos != (pos = etag.find_last_of('"')))
+  {
+    etag.erase(pos);
+  }
+
+  if(NULL == strstr(etag, "-") && NULL == strstr(etag, s3fscurl->partdata.etag.c_str())){
     return false;
   }
-  s3fscurl->partdata.etaglist->at(s3fscurl->partdata.etagpos).assign(s3fscurl->partdata.etag);
+
+  s3fscurl->partdata.etaglist->at(s3fscurl->partdata.etagpos).assign(etag);
   s3fscurl->partdata.uploaded = true;
 
   return true;
