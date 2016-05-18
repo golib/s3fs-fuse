@@ -4061,7 +4061,7 @@ struct curl_slist* curl_slist_sort_insert(struct curl_slist* list, const char* k
   // key & value are trimed and lower(only key)
   string strkey = trim(string(key));
   string strval = trim(string(value ? value : ""));
-  string strnew = key + string(": ") + strval;
+  string strnew = canonical_http_header_key(strkey) + string(": ") + strval;
   if(NULL == (new_item->data = strdup(strnew.c_str()))){
     free(new_item);
     return list;
