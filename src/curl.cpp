@@ -4228,6 +4228,18 @@ string prepare_url(const char* url)
 
   url_str = uri + host + path;
 
+  // strip the trailing '/', if any, off the end of the host
+  // string
+  size_t found, length;
+  found  = url_str.find_last_of('/');
+  length = url_str.length();
+  while(found == (length - 1) && length > 0){
+     url_str.erase(found);
+     found  = url_str.find_last_of('/');
+     length = url_str.length();
+  }
+
+
   S3FS_PRN_INFO3("URL changed is %s", url_str.c_str());
 
   return str(url_str);
