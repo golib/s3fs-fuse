@@ -1140,11 +1140,34 @@ bool S3fsCurl::UploadMultipartPostCallback(S3fsCurl* s3fscurl)
   if(!s3fscurl){
     return false;
   }
+
   // check etag(md5);
-  if(NULL == strstr(s3fscurl->headdata->str(), s3fscurl->partdata.etag.c_str())){
+  string etag = "";
+  stringstream ss(s3fscurl->headdata->str());
+  while(getline(ss, etag, '\n'))
+  {
+    if(0 != strstr(etag.c_str(), "Etag: ") || 0 != strstr(etag.c_str(), "etag: ") || 0 != strstr(etag.c_str(), "ETag: "))
+    {
+      etag = etag.substr(etag.find_first_of(": ")+2);
+      break;
+    }
+  }
+
+  size_t pos;
+  if(string::npos != (pos = etag.find_first_of('"')))
+  {
+    etag = etag.substr(pos+1);
+  }
+  if(string::npos != (pos = etag.find_last_of('"')))
+  {
+    etag.erase(pos);
+  }
+
+  if(NULL == strstr(etag, "-") && NULL == strstr(etag, s3fscurl->partdata.etag.c_str())){
     return false;
   }
-  s3fscurl->partdata.etaglist->at(s3fscurl->partdata.etagpos).assign(s3fscurl->partdata.etag);
+
+  s3fscurl->partdata.etaglist->at(s3fscurl->partdata.etagpos).assign(etag);
   s3fscurl->partdata.uploaded = true;
 
   return true;
@@ -2117,7 +2140,7 @@ string S3fsCurl::CalcSignatureV2(const string& method, const string& strMD5, con
   StringToSign += content_type + "\n";
   StringToSign += date + "\n";
   StringToSign += get_canonical_headers(requestHeaders, true);
-  StringToSign += resource;
+  StringToSign += trim_tail_slash(resource);
 
   const void* key            = S3fsCurl::AWSSecretAccessKey.data();
   int key_len                = S3fsCurl::AWSSecretAccessKey.size();
@@ -2154,7 +2177,7 @@ string S3fsCurl::CalcSignature(const string& method, const string& canonical_uri
     requestHeaders = curl_slist_sort_insert(requestHeaders, "x-amz-security-token", S3fsCurl::AWSAccessToken.c_str());
   }
 
-  uriencode = urlEncode(canonical_uri);
+  uriencode = urlEncode(trim_tail_slash(canonical_uri));
   StringCQ  = method + "\n";
   if(0 == strcmp(method.c_str(),"HEAD") || 0 == strcmp(method.c_str(),"PUT") || 0 == strcmp(method.c_str(),"DELETE")){
     StringCQ += uriencode + "\n";
@@ -2163,7 +2186,7 @@ string S3fsCurl::CalcSignature(const string& method, const string& canonical_uri
   }else if (0 == strcmp(method.c_str(), "GET") && 0 == strncmp(uriencode.c_str(), "/", 1)) {
     StringCQ += uriencode +"\n";
   }else if (0 == strcmp(method.c_str(), "GET") && 0 != strncmp(uriencode.c_str(), "/", 1)) {
-    StringCQ += "/\n" + urlEncode2(canonical_uri) +"\n";
+    StringCQ += "/\n" + urlEncode2(trim_tail_slash(canonical_uri)) +"\n";
   }else if (0 == strcmp(method.c_str(), "POST")) {
     StringCQ += uriencode + "\n";
   }
@@ -4061,7 +4084,7 @@ struct curl_slist* curl_slist_sort_insert(struct curl_slist* list, const char* k
   // key & value are trimed and lower(only key)
   string strkey = trim(string(key));
   string strval = trim(string(value ? value : ""));
-  string strnew = key + string(": ") + strval;
+  string strnew = canonical_http_header_key(strkey) + string(": ") + strval;
   if(NULL == (new_item->data = strdup(strnew.c_str()))){
     free(new_item);
     return list;
@@ -4189,6 +4212,30 @@ string get_canonical_headers(const struct curl_slist* list, bool only_amz)
   return canonical_headers;
 }
 
+string canonical_http_header_key(string key)
+{
+  bool cap = true;
+
+  for (unsigned int i = 0; i <= key.length(); i++)
+  {
+    if (isalpha(key[i]) && cap == true)
+    {
+      key[i] = toupper(key[i]);
+      cap = false;
+    }
+    else if (key[i] == '-')
+    {
+      cap = true;
+    }
+    else
+    {
+      key[i] = tolower(key[i]);
+    }
+  }
+
+  return key;
+}
+
 // function for using global values
 bool MakeUrlResource(const char* realpath, string& resourcepath, string& url)
 {
@@ -4236,7 +4283,22 @@ string prepare_url(const char* url)
 
   S3FS_PRN_INFO3("URL changed is %s", url_str.c_str());
 
-  return str(url_str);
+  return trim_tail_slash(url_str);
+}
+
+string trim_tail_slash(string url)
+{
+  // strip the trailing '/', if any, off the end of the url string
+  size_t found, length;
+  found  = url.find_last_of('/');
+  length = url.length();
+  while(found == (length - 1) && length > 0){
+    url.erase(found);
+    found  = url.find_last_of('/');
+    length = url.length();
+  }
+
+  return url;
 }
 
 /*
