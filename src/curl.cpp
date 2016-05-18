@@ -1163,7 +1163,7 @@ bool S3fsCurl::UploadMultipartPostCallback(S3fsCurl* s3fscurl)
     etag.erase(pos);
   }
 
-  if(NULL == strstr(etag, "-") && NULL == strstr(etag, s3fscurl->partdata.etag.c_str())){
+  if(NULL == strstr(etag.c_str(), "-") && NULL == strstr(etag.c_str(), s3fscurl->partdata.etag.c_str())){
     return false;
   }
 
