@@ -480,6 +480,7 @@ std::string get_canonical_headers(const struct curl_slist* list, bool only_amz =
 std::string canonical_http_header_key(std::string key);
 bool MakeUrlResource(const char* realpath, std::string& resourcepath, std::string& url);
 std::string prepare_url(const char* url);
+std::string trim_tail_slash(std::string url);
 bool get_object_sse_type(const char* path, sse_type_t& ssetype, std::string& ssevalue);   // implement in s3fs.cpp
 
 #endif // S3FS_CURL_H_
