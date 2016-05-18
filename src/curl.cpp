@@ -4183,6 +4183,30 @@ string get_canonical_headers(const struct curl_slist* list, bool only_amz)
   return canonical_headers;
 }
 
+string canonical_http_header_key(string key)
+{
+  bool cap = true;
+
+  for (unsigned int i = 0; i <= key.length(); i++)
+  {
+    if (isalpha(key[i]) && cap == true)
+    {
+      key[i] = toupper(key[i]);
+      cap = false;
+    }
+    else if (key[i] == '-')
+    {
+      cap = true;
+    }
+    else
+    {
+      key[i] = tolower(key[i]);
+    }
+  }
+
+  return key;
+}
+
 // function for using global values
 bool MakeUrlResource(const char* realpath, string& resourcepath, string& url)
 {

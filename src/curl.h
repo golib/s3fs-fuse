@@ -477,6 +477,7 @@ struct curl_slist* curl_slist_sort_insert(struct curl_slist* list, const char* d
 struct curl_slist* curl_slist_sort_insert(struct curl_slist* list, const char* key, const char* value);
 std::string get_sorted_header_keys(const struct curl_slist* list);
 std::string get_canonical_headers(const struct curl_slist* list, bool only_amz = false);
+std::string canonical_http_header_key(std::string key);
 bool MakeUrlResource(const char* realpath, std::string& resourcepath, std::string& url);
 std::string prepare_url(const char* url);
 bool get_object_sse_type(const char* path, sse_type_t& ssetype, std::string& ssevalue);   // implement in s3fs.cpp
