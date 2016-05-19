@@ -4267,17 +4267,21 @@ string prepare_url(const char* url)
   }else{
     host = url_str.substr(uri_length, bucket_pos - uri_length).c_str();
     string part = url_str.substr((bucket_pos + bucket_length));
-    if('/' != part[0]){
+    if('/' != part[0] && '?' != part[0]){
       part = "/" + part;
     }
     path = "/" + bucket + part;
   }
 
+  if(NULL == strstr(path.c_str(), "?"))
+  {
+    path = trim_tail_slash(path);
+  }
+
   url_str = uri + host + path;
 
   S3FS_PRN_INFO3("URL changed is %s", url_str.c_str());
-
-  return trim_tail_slash(url_str);
+  return url_str;
 }
 
 string trim_tail_slash(string url)
